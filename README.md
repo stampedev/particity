@@ -1,6 +1,10 @@
 # particity
 Participatory marketplace for voluntary services/donations
 
+---
+== ! Project inactive, repository archived ! ==
+---
+
 ## License
 Particity is released under a [3-clause BSD](http://opensource.org/licenses/BSD-3-Clause)
 
