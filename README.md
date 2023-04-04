@@ -2,7 +2,7 @@
 Participatory marketplace for voluntary services/donations
 
 ---
-== ! Project inactive, repository archived ! ==
+! Project outdated & inactive, repository archived !
 ---
 
 ## License
