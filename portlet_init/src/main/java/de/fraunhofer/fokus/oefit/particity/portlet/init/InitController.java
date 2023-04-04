@@ -33,7 +33,11 @@
  */
 package de.fraunhofer.fokus.oefit.particity.portlet.init;
 
+import java.io.IOException;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.PostConstruct;
 import javax.portlet.ActionRequest;
@@ -52,6 +56,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.portlet.bind.annotation.ActionMapping;
 import org.springframework.web.portlet.bind.annotation.RenderMapping;
+import org.springframework.web.portlet.util.PortletUtils;
 
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
@@ -66,7 +71,11 @@ import com.liferay.portal.security.auth.Authenticator;
 import com.liferay.portal.service.UserLocalServiceUtil;
 import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.util.URLUtil;
+import com.liferay.portlet.PortletURLUtil;
+import com.liferay.taglib.ui.LogoSelectorTag;
 
+import de.fraunhofer.fokus.oefit.adhoc.custom.CustomPortalServiceHandler;
 import de.fraunhofer.fokus.oefit.adhoc.custom.E_ConfigKey;
 import de.fraunhofer.fokus.oefit.adhoc.custom.E_Role;
 import de.fraunhofer.fokus.oefit.adhoc.forms.ProfileForm;
@@ -110,6 +119,16 @@ public class InitController extends BaseController {
 	        final RenderResponse response,
 	        final Model model) {
 		m_objLog.trace("render::start");
+		if (getThemeDisplay(request).isSignedIn()) {
+			try {
+				HttpServletRequest oreq = PortalUtil.getHttpServletRequest(request);
+				oreq.getSession().invalidate();
+				PortalUtil.getHttpServletResponse(response).sendRedirect(getThemeDisplay(request).getURLSignOut());
+				return null;
+			} catch (IOException e) {
+				m_objLog.error(e);
+			}
+		}
 		String page = request.getParameter("jspPage");
 		if (page == null) {
 			page = "init";
@@ -127,10 +146,68 @@ public class InitController extends BaseController {
 
 		return page;
 	}
+	
+	@RequestMapping(value = "view")
+	@ActionMapping(params="action=initParticity")
+	public void initParticity(final ActionRequest request,
+	        final ActionResponse response,
+	        final Model model) {
+		m_objLog.trace("initParticity::start");
+
+		Map<E_ContextPath, String> pathMap = new HashMap<E_ContextPath, String>();
+		Map<E_SetupParam, String> paramMap = new HashMap<E_SetupParam, String>();
+		Enumeration<String> pnames = request.getParameterNames();
+		while (pnames.hasMoreElements()) {
+			String pname = pnames.nextElement();
+			String pval = request.getParameter(pname);
+			m_objLog.debug("Found parameter "+pname+" = "+pval);
+			if (pname.startsWith("role_")) {
+				pname = pname.replaceAll("role_", "");
+				E_Role role = null;
+				try {
+					role = E_Role.valueOf(pname);
+				} catch (Throwable t) {}
+				if (role != null) {
+					// setup role
+					CustomPortalServiceHandler.setConfig(role.getKey(), pval);
+				} else
+					m_objLog.warn("Unknown role "+pname);
+			} else if (pname.startsWith("page_")) {
+				pname = pname.replaceAll("page_", "");
+				E_ContextPath pth = null;
+				try {
+					pth = E_ContextPath.valueOf(pname);
+				} catch (Throwable t) {}
+				if (pth != null) {
+					pathMap.put(pth, pval);
+				}
+		    } else if (pname.startsWith("opt_")) {
+				pname = pname.replaceAll("opt_", "");
+				E_SetupParam sp = null;
+				try {
+					sp = E_SetupParam.valueOf(pname);
+				} catch (Throwable t) {}
+				if (sp != null) {
+					paramMap.put(sp, pval);
+				} 
+		    }
+		}
+		// setup layouts & content
+		if (pathMap.size() > 0)
+			ParticityInitializer.setup(pathMap, paramMap);		
+		try {
+			response.sendRedirect("/");
+		} catch (IOException e) {
+		}
+		
+		m_objLog.trace("initParticity::end()");
+	}
 
 	@PostConstruct
 	public void init() {
 		ParticityInitializer.init();
+		
+		//ParticityInitializer.test();
 	}
 	
 }

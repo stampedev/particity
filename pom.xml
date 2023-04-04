@@ -3,7 +3,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.fraunhofer.fokus.oefit</groupId>
-	<version>0.9.3</version>
+	<version>0.9.4-RC1</version>
 	<artifactId>particity-suite</artifactId>
 	<packaging>pom</packaging>
 	<name>particity-suite</name>
@@ -55,8 +55,8 @@
 		<!-- libs -->
 		<module>lib_data</module>
 
-    <!-- hooks -->
-    <module>hook_securefilter</module>
+        <!-- hooks -->
+        <module>hook_securefilter</module>
 
 		<!-- basic portlets -->
 		<module>portlet_data</module>
@@ -65,6 +65,7 @@
 		<module>portlet_org</module>
 		<module>portlet_newsletter</module>
 		<module>portlet_site</module>
+		<module>portlet_init</module>
 
 		<!-- themes/layout -->
 		<module>layout_2col</module>
@@ -441,7 +442,13 @@
 						<encoding>${project.build.sourceEncoding}</encoding>
 					</configuration>
 				</plugin>
-
+                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-war-plugin</artifactId>
+                    <configuration>
+                        <outputDirectory>${basedir}/../deploy/</outputDirectory>
+                    </configuration>
+                </plugin>
 			</plugins>
 		</pluginManagement>
 		<extensions>
@@ -537,6 +544,8 @@
 				<configuration>
 					<maxmemory>1024m</maxmemory>
 					<aggregate>false</aggregate>
+					<!-- since Java8 to prevent exceptions on missing parameters  -->
+					<additionalparam>-Xdoclint:none</additionalparam>
 				</configuration>
 			</plugin>
 
@@ -577,7 +586,7 @@
 
 
 	<repositories>
-		<repository>
+	    <repository>
 			<id>liferay-repo</id>
 			<name>Lifray Snapshots</name>
 			<url>https://repository.liferay.com/nexus/content/groups/liferay-ce</url>

@@ -64,7 +64,6 @@ import com.liferay.portal.service.ResourcePermissionServiceUtil;
 import com.liferay.portal.service.RoleLocalServiceUtil;
 import com.liferay.portal.service.ServiceContext;
 import com.liferay.portal.service.UserLocalServiceUtil;
-import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.portal.util.PortalUtil;
 import com.liferay.portlet.documentlibrary.model.DLFolder;
 import com.liferay.portlet.documentlibrary.service.DLAppServiceUtil;
@@ -198,7 +197,60 @@ public class CustomPortalServiceHandler {
 		        guestRole.getRoleId(), actionids);
 		
 	}
+	
+	/**
+	 * Check whether a Liferay-Role matches any role defined by this enum
+	 *
+	 * @param cmpRole the Liferay role
+	 * @return the supported enum or null, if not supported
+	 */
+	public static E_Role matchesRole(final Role cmpRole) {
+		E_Role result = null;
 
+		if (cmpRole != null) {
+			for (final E_Role role : E_Role.values()) {
+				if (getRoleName(role).equals(cmpRole.getName())
+				        && role.getType() == cmpRole.getType()) {
+					result = role;
+					// System.out.println(role.getName()+" ("+role.getType()+") == "+cmpRole.getName()+" ("+cmpRole.getType()+")");
+					break;
+				} else {
+					// System.out.println(role.getName()+" ("+role.getType()+") != "+cmpRole.getName()+" ("+cmpRole.getType()+")");
+				}
+			}
+		}
+
+		return result;
+	}
+	
+	/**
+	 * Get actual/dynamic role name of a role containing a configuration reference
+	 * 
+	 * @param role The role
+	 * @return The role name
+	 */
+	public static String getRoleName(E_Role role) {
+		String name = role.getDefaultName();
+		
+		//m_objLog.info("Got role "+role.name()+" with rolename "+name+", and key "+role.getKey());
+		if (name == null && role.getKey() != null) {
+			name = CustomPortalServiceHandler.getConfigValue(role.getKey());
+		}
+		
+		return name;
+	}
+	
+	/**
+	 * Check for a specific role name and create a regular role if not existent
+	 *
+	 * @param companyId the company Id of the given role
+	 * @param role the role enum
+	 * @return the role
+	 */
+	public static Role checkRole(final long userId, final long companyId, final E_Role role) {
+		return checkRole(userId, companyId, getRoleName(role), role.getType());
+	}
+	
 	/**
 	 * Check for a specific role name and create a regular role if not existent
 	 *
@@ -250,7 +302,13 @@ public class CustomPortalServiceHandler {
 	public static User createPortalUser(final String firstName,
 	        final String lastName, final String mail, final long companyId, final long groupId,
 	        final Locale locale, boolean sendMail) {
-		return createPortalUser(firstName, lastName, mail, companyId, groupId, locale, sendMail, null, false);
+		return createPortalUser(firstName, lastName, mail, companyId, groupId, locale, sendMail, null, false, null);
+	}
+	
+	public static User createPortalUser(final String firstName,
+	        final String lastName, final String mail, final long companyId, final long groupId,
+	        final Locale locale, boolean sendMail, String password, boolean isAdmin) {
+		return createPortalUser(firstName, lastName, mail, companyId, groupId, locale, sendMail, password, isAdmin, null);
 	}
 	
 	/**
@@ -265,12 +323,13 @@ public class CustomPortalServiceHandler {
 	 */
 	public static User createPortalUser(final String firstName,
 	        final String lastName, final String mail, final long companyId, final long groupId,
-	        final Locale locale, boolean sendMail, String password, boolean isAdmin) {
+	        final Locale locale, boolean sendMail, String password, boolean isAdmin, E_Role defaultRole) {
 
 		User user = null;
 		try {
-			final Role orgRole = checkRole(0, companyId,
-			        Constants.DEFAULT_ROLE_ORGANIZATION, RoleConstants.TYPE_REGULAR);
+			if (defaultRole == null)
+				defaultRole = E_Role.ORG;
+			final Role defRole = checkRole(0, companyId, defaultRole);
 
 			try {
 				user = UserLocalServiceUtil.getUserByEmailAddress(companyId,
@@ -290,7 +349,7 @@ public class CustomPortalServiceHandler {
 				//long[] userGroups = new long[]{groupId, guestSite.getGroupId()};
 				
 				long[] roles = new long[2];
-				roles[0] = orgRole.getRoleId();
+				roles[0] = defRole.getRoleId();
 				
 				if (isAdmin) {
 					final Role adminRole = checkRole(0, companyId,
@@ -339,7 +398,7 @@ public class CustomPortalServiceHandler {
 		} else {
 			value = AHConfigLocalServiceUtil.getConfig(key.toString(),
 			        key.getDefaultValue());
-			// m_objLog.debug("Got portlet property "+key.toString()+" = "+value);
+			m_objLog.info("Got portlet property "+key.toString()+" = "+value);
 		}
 		return value;
 	}

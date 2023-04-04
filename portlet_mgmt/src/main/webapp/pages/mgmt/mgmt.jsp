@@ -1,4 +1,7 @@
 
+<%@page import="com.liferay.portal.kernel.util.HtmlUtil"%>
+<%@page import="org.springframework.web.util.HtmlUtils"%>
+<%@page import="de.fraunhofer.fokus.oefit.adhoc.custom.E_ConfigRole"%>
 <%@page
 	import="de.fraunhofer.fokus.oefit.adhoc.custom.CustomPortalServiceHandler"%>
 <%@page
@@ -17,7 +20,6 @@
 <%@page import="de.fraunhofer.fokus.oefit.adhoc.custom.E_TableColumn"%>
 <%@page import="de.fraunhofer.fokus.oefit.adhoc.custom.E_CategoryType"%>
 <%@page import="com.liferay.portal.kernel.dao.orm.QueryUtil"%>
-<%@page import="de.fraunhofer.fokus.oefit.adhoc.custom.E_Role"%>
 <%@page import="javax.portlet.PortletURL"%>
 <%@page import="de.fraunhofer.fokus.oefit.adhoc.custom.E_ConfigKey"%>
 <%@page import="de.fraunhofer.fokus.oefit.adhoc.custom.E_ConfigCategory"%>
@@ -1130,7 +1132,7 @@
 									<%
 						      for (E_ConfigCategory category: E_ConfigCategory.getByDomain(domain)) {
 						        // skip configuration not meant for our eyes
-						        if (category.getRole() == null || !E_Role.MGMT.equals(category.getRole()))
+						        if (category.getRole() == null || !E_ConfigRole.MGMT.equals(category.getRole()))
 						          continue;
 						        String cName = category.toString().toLowerCase();
 						        //String cForm = cName+"Form";
@@ -1173,7 +1175,7 @@
 													<input id="<%= key.toString() %>"
 														name="<%= key.toString() %>" class="form-control input-lg"
 														type="<%= key.getType().getHtmlType() %>"
-														value="<%= value %>">
+														value="<%= HtmlUtil.escape(value) %>">
 													<%
 						                        break;
 						                       case TEXTAREA:
